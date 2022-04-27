@@ -51,7 +51,7 @@ def save_sample_data(dataset_name="newsroom", file_name="sample-v2", n_samples=1
         } for text, pred in zip(src_texts, target_texts)], f, indent=4)
 
 
-def load_sample_data(dataset_name="newsroom", file_name="sample-v1"):
+def load_sample_data(dataset_name="newsroom", file_name="sample-v2"):
     with open(f"data/{dataset_name}/{file_name}.json", "r") as f:
         data = json.load(f)
     return data
