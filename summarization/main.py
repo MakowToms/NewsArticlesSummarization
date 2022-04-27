@@ -3,6 +3,7 @@ import json
 
 import numpy as np
 from datasets import load_metric
+from tqdm import tqdm
 from transformers import PegasusForConditionalGeneration, PegasusTokenizer
 
 from summarization.data import load_sample_data
@@ -10,10 +11,10 @@ from subjectivity.filter_subjectivity import load_filtered
 
 
 # init data
-data = load_sample_data()
-texts = [row["text"] for row in data]
-summaries = [row["summary"] for row in data]
-# texts, summaries, filtered_texts = load_filtered("data/newsroom/sample-v1_subj_scored.json")
+# data = load_sample_data()
+# texts = [row["text"] for row in data]
+# summaries = [row["summary"] for row in data]
+texts, summaries, filtered_texts = load_filtered("data/newsroom/sample-v2_subj_scored.json")
 
 # init model
 model_name = "google/pegasus-newsroom"
@@ -24,41 +25,48 @@ model = PegasusForConditionalGeneration.from_pretrained(model_name).to(device)
 # init metric
 metric = load_metric("rouge")
 
-# prepare data
-batches = [
-    tokenizer(texts[i:(i+4)], truncation=True, padding="longest", return_tensors="pt").to(device)
-    for i in range(0, len(texts), 4)
-]
 
 # evaluate
-all_preds = []
-for batch in batches:
-    all_preds.append(model.generate(**batch))
-
-max_dim = max([preds.shape[1] for preds in all_preds])
-
-
 def change_size(predictions, dim):
     new = np.zeros([predictions.shape[0], dim])
     new[:, :predictions.shape[1]] = predictions
     return new
 
 
-all_preds = [change_size(preds, max_dim) for preds in all_preds]
-preds_concat = np.concatenate(all_preds)
-predicted = tokenizer.batch_decode(preds_concat, skip_special_tokens=True)
+def evaluate(texts, summaries):
+    batches = [
+        tokenizer(texts[i:(i + 4)], truncation=True, padding="longest", return_tensors="pt").to(device)
+        for i in range(0, len(texts), 4)
+    ]
+
+    all_preds = []
+    for batch in tqdm(batches):
+        all_preds.append(model.generate(**batch))
+
+    max_dim = max([preds.shape[1] for preds in all_preds])
+
+    all_preds = [change_size(preds, max_dim) for preds in all_preds]
+    preds_concat = np.concatenate(all_preds)
+    predicted = tokenizer.batch_decode(preds_concat, skip_special_tokens=True)
+
+    result = metric.compute(predictions=predicted, references=summaries, use_stemmer=True)
+    result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
+    prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds_concat]
+    result["gen_len"] = np.mean(prediction_lens)
+    result = {k: round(v, 4) for k, v in result.items()}
+
+    return result
 
 
 # save results
-result = metric.compute(predictions=predicted, references=summaries[:4], use_stemmer=True)
-result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
-prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds_concat]
-result["gen_len"] = np.mean(prediction_lens)
-result = {k: round(v, 4) for k, v in result.items()}
-
+result = evaluate(texts, summaries)
 with open(f"data/newsroom/results/sample-v2.json", "w") as f:
     json.dump(result, f, indent=4)
 
+
+result = evaluate(filtered_texts, summaries)
+with open(f"data/newsroom/results/sample-v2_subj_scored-0.001.json", "w") as f:
+    json.dump(result, f, indent=4)
 
 # device = "cuda" if torch.cuda.is_available() else "cpu"
 # src_text = [
