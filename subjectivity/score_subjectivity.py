@@ -4,7 +4,7 @@ from transformers import pipeline
 import nltk
 nltk.download('punkt')
 
-PATH = 'data/newsroom/sample-v1.json'
+PATH = 'data/newsroom/sample-v2.json'
 
 
 class TransformerSentiment:
@@ -14,23 +14,6 @@ class TransformerSentiment:
     def score(self, sentences):
         sentiments = self.pipeline(sentences)
         return [1-sentiment['score'] for sentiment in sentiments]
-
-
-def score_transformer(file):
-
-    sentiment_pipeline = pipeline("sentiment-analysis")
-    all_texts = []
-    all_summaries = []
-    all_sentences = []
-    all_scores = []
-    for row in text_json:
-        sentences = nltk.tokenize.sent_tokenize(row['text'])
-        sentiments = sentiment_pipeline(sentences)
-        scores = [1-sentiment['score'] for sentiment in sentiments]
-        all_texts.append(row['text'])
-        all_sentences.append(sentences)
-        all_scores.append(scores)
-        all_summaries.append(row['summary'])
 
 
 def load_json_data(path):
