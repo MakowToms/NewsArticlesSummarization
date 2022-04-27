@@ -1,4 +1,5 @@
-import torch
+import json
+
 from datasets import load_dataset, DatasetDict
 
 # force not using cuda
@@ -25,3 +26,27 @@ def load_newsroom(subset=True):
     else:
         dataset = load_dataset("newsroom", data_dir="data/newsroom")
     return dataset
+
+
+def filter_texts(texts):
+    return [
+        txt.replace("\n", "").replace("\x97", "") for txt in texts
+    ]
+
+
+def save_sample_data(file_name="sample-v1"):
+    newsroom = load_newsroom(subset=True)
+    samples = 100
+    src_texts = filter_texts([str(text) for text in newsroom.data["train"]["text"][:samples]])
+    target_texts = filter_texts([str(text) for text in newsroom.data["train"]["summary"][:samples]])
+
+    mean_len = sum([len(t) for t in src_texts]) / samples
+    mean_sum = sum([len(t) for t in target_texts]) / samples
+    print(f"Mean text length: {mean_len}")
+    print(f"Mean summary length: {mean_sum}")
+
+    with open(f"data/newsroom/{file_name}.json", "w") as f:
+        json.dump([{
+            "text": text,
+            "summary": pred
+        } for text, pred in zip(src_texts, target_texts)], f, indent=4)
