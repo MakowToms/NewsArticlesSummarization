@@ -2,9 +2,20 @@ import sys
 import json
 from transformers import pipeline
 import nltk
+from textblob import TextBlob
 nltk.download('punkt')
 
-PATH = 'data/newsroom/sample-v2.json'
+PATH = 'data/newsroom/sample-v1.json'
+
+
+class BlobSentiment:
+
+    def score(self, sentences):
+        sentiments = []
+        for sentence in sentences:
+            blob = TextBlob(sentence)
+            sentiments.append(blob.sentiment.subjectivity)
+        return [1-sentiment for sentiment in sentiments]
 
 
 class TransformerSentiment:
@@ -24,9 +35,9 @@ def load_json_data(path):
     return texts, summaries
 
 
-def save_json_data(path, texts, summaries, scores, sentences):
+def save_json_data(path, texts, summaries, scores, sentences, suffix=''):
     split_path = path.split('.')
-    save_path = split_path[0] + '_subj_scored.' + split_path[1]
+    save_path = split_path[0] + f'_subj_scored_{suffix}.' + split_path[1]
 
     with open(save_path, "w") as f:
         json.dump([{
@@ -39,7 +50,7 @@ def save_json_data(path, texts, summaries, scores, sentences):
 
 def main():
     texts, summaries = load_json_data(PATH)
-    scorer = TransformerSentiment()
+    scorer = BlobSentiment()
     all_sentences = []
     all_scores = []
     for text in texts:
@@ -47,7 +58,7 @@ def main():
         scores = scorer.score(sentences)
         all_sentences.append(sentences)
         all_scores.append(scores)
-    save_json_data(PATH, texts, summaries, all_scores, all_sentences)
+    save_json_data(PATH, texts, summaries, all_scores, all_sentences, 'blob')
     return 0
 
 
