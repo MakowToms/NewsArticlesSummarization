@@ -17,6 +17,8 @@ def load_filtered(path, threshold=0.001):
     filtered_texts = []
     for sentences, scores in zip(all_sentences, all_scores):
         sentences_np = np.array(sentences)
-        filtered_sentences = sentences_np[np.where(np.array(scores, dtype=float) > threshold)]
+        filtered_sentences = sentences_np[
+            np.where(np.array(scores, dtype=float) > threshold)
+        ]
         filtered_texts.append(' '.join(filtered_sentences))
     return texts, summaries, filtered_texts
