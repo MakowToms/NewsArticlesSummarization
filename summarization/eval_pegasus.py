@@ -143,9 +143,9 @@ def main(
     model = PegasusForConditionalGeneration.from_pretrained(model_name).to(device)
 
     if random:
-        texts, summaries, filtered_texts = load_random_as_many_as_filtered(input_json, threshold)
+        texts, summaries, filtered_texts, n_sentences = load_random_as_many_as_filtered(input_json, threshold)
     else:
-        texts, summaries, filtered_texts = load_filtered(input_json, threshold)
+        texts, summaries, filtered_texts, n_sentences = load_filtered(input_json, threshold)
 
     if filtered:
         result = evaluate(filtered_texts, summaries, tokenizer, model, batch_size, device)
