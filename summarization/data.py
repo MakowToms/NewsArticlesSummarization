@@ -97,5 +97,5 @@ def load_sample_data(dataset_name="newsroom", file_name="sample-v2"):
 # multi_news = load_dataset("multi_news")
 # newsroom = load_newsroom(subset=True)
 
-save_sample_data("multinews", "sample-v1")
-save_sample_data("newsroom", "sample-v2")
+# save_sample_data("multinews", "sample-v1")
+# save_sample_data("newsroom", "sample-v2")
