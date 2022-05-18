@@ -78,7 +78,7 @@ def save_sample_data(dataset_name="newsroom", file_name="sample-v2", n_samples=1
 def get_sample_dict(text, summary, dataset_name):
     if dataset_name == "newsroom":
         return {
-            "text": text,
+            "texts": [text],
             "summary": summary
         }
     elif dataset_name == "multinews":
@@ -98,3 +98,4 @@ def load_sample_data(dataset_name="newsroom", file_name="sample-v2"):
 # newsroom = load_newsroom(subset=True)
 
 save_sample_data("multinews", "sample-v1")
+save_sample_data("newsroom", "sample-v2")
