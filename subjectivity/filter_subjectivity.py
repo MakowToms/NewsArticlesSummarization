@@ -20,3 +20,17 @@ def load_filtered(path, threshold=0.001):
         filtered_sentences = sentences_np[np.where(np.array(scores, dtype=float) > threshold)]
         filtered_texts.append(' '.join(filtered_sentences))
     return texts, summaries, filtered_texts
+
+
+def load_random_as_many_as_filtered(path, threshold=0.001):
+    texts, summaries, all_sentences, all_scores = load_json_scored(path)
+    filtered_texts = []
+    for sentences, scores in zip(all_sentences, all_scores):
+        sentences_np = np.array(sentences)
+        n_sentences = np.sum(np.array(scores, dtype=float) > threshold)
+        if n_sentences > 0:
+            filtered_sentences = sentences_np[np.random.choice(np.arange(0, sentences_np.shape[0], n_sentences))]
+            filtered_texts.append(' '.join(filtered_sentences))
+        else:
+            filtered_texts.append('')
+    return texts, summaries, filtered_texts
