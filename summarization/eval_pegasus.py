@@ -12,8 +12,7 @@ from transformers import PegasusForConditionalGeneration, PegasusTokenizer
 
 from config import NEPTUNE_PROJECT, NEPTUNE_API_TOKEN
 from summarization.data import load_sample_data
-from subjectivity.filter_subjectivity import load_filtered
-
+from subjectivity.filter_subjectivity import load_filtered, load_random_as_many_as_filtered
 
 # init data
 # data = load_sample_data()
@@ -99,15 +98,37 @@ python -m summarization.eval_pegasus -i data/newsroom/sample-v2_subj_scored_blob
     type=float,
     help="Threshold to filter texts.",
 )
+@click.option(
+    "-f",
+    "--filtered",
+    type=bool,
+    default=True,
+    help="If process on filtered texts.",
+)
+@click.option(
+    "-r",
+    "--random",
+    type=bool,
+    default=False,
+    help="If should select random sentences.",
+)
 def main(
     input_json: Path,
     save_file: Optional[Path] = None,
     threshold: float = 0.01,
+    filtered: bool = True,
+    random: bool = False,
 ):
     params = locals()
-    texts, summaries, filtered_texts = load_filtered(input_json, threshold)
+    if random:
+        texts, summaries, filtered_texts = load_random_as_many_as_filtered(input_json, threshold)
+    else:
+        texts, summaries, filtered_texts = load_filtered(input_json, threshold)
 
-    result = evaluate(filtered_texts, summaries)
+    if filtered:
+        result = evaluate(filtered_texts, summaries)
+    else:
+        result = evaluate(texts, summaries)
     if save_file is not None:
         with open(save_file, "w") as f:
             json.dump(result, f, indent=4)
@@ -117,6 +138,7 @@ def main(
     logger["results"] = result
     logger["mean_filtered_length"] = sum([len(t) for t in filtered_texts]) / len(filtered_texts)
     logger["mean_text_length"] = sum([len(t) for t in texts]) / len(filtered_texts)
+    logger["method"] = "Pegasus"
     logger.stop()
 
 
