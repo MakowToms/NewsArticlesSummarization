@@ -28,15 +28,22 @@ def main(
     nltk.download('punkt')
     texts, summaries = load_json_data(path)
     scorers = {'blob': BlobSentiment, 'transformer': TransformerSentiment}
-    scorer = scorers[scorer]()
+    scorer_instance = scorers[scorer]()
     all_sentences = []
     all_scores = []
     for text in texts:
         sentences = nltk.tokenize.sent_tokenize(text)
-        scores = scorer.score(sentences)
+        scores = scorer_instance.score(sentences)
         all_sentences.append(sentences)
         all_scores.append(scores)
-    save_json_data(path, texts, summaries, all_scores, all_sentences, scorer)
+    save_json_data(
+        path,
+        texts,
+        summaries,
+        all_scores,
+        all_sentences,
+        scorer,
+    )
     return 0
 
 
@@ -72,12 +79,22 @@ def save_json_data(path, texts, summaries, scores, sentences, suffix=''):
     save_path = split_path[0] + f'_subj_scored_{suffix}.' + split_path[1]
 
     with open(save_path, "w") as f:
-        json.dump([{
-            "text": text,
-            "summary": summary,
-            "scores": score,
-            "sentences": sentence,
-        } for text, summary, score, sentence in zip(texts, summaries, scores, sentences)], f, indent=4)
+        json.dump(
+            [
+                {
+                    "text": text,
+                    "summary": summary,
+                    "scores": score,
+                    "sentences": sentence,
+                }
+                for text, summary, score, sentence in zip(
+                    texts,
+                    summaries,
+                    scores,
+                    sentences
+                )
+            ], f, indent=4
+        )
 
 
 if __name__ == '__main__':
