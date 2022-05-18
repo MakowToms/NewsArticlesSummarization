@@ -37,27 +37,17 @@ def change_size(predictions, dim):
 
 
 def evaluate(texts, summaries, summary_length, max_summary_length):
-    batches = [
-        tokenizer(texts[i:(i + 4)], truncation=True, padding="longest", return_tensors="pt").to(device)
-        for i in range(0, len(texts), 4)
-    ]
 
-    all_preds = []
-    text_summary_length = summary_length
+    predicted = []
+    num_sentences = summary_length
     for text in tqdm(texts):
         if not summary_length:
-            text_summary_length = model.calculate_optimal_k(text, k_max=max_summary_length)
-        all_preds.append(model.generate(**batch))
-
-    max_dim = max([preds.shape[1] for preds in all_preds])
-
-    all_preds = [change_size(preds, max_dim) for preds in all_preds]
-    preds_concat = np.concatenate(all_preds)
-    predicted = tokenizer.batch_decode(preds_concat, skip_special_tokens=True)
+            num_sentences = model.calculate_optimal_k(text, k_max=max_summary_length)
+        predicted.append(model(text, num_sentences=num_sentences))
 
     result = metric.compute(predictions=predicted, references=summaries, use_stemmer=True)
     result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
-    prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds_concat]
+    prediction_lens = [len(pred) for pred in predicted]
     result["gen_len"] = np.mean(prediction_lens)
     result = {k: round(v, 4) for k, v in result.items()}
 
