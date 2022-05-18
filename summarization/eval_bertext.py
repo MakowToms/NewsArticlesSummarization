@@ -26,12 +26,13 @@ def change_size(predictions, dim):
     return new
 
 
-def evaluate(texts, summaries, summary_length, summary_ratio, max_summary_length):
+def evaluate(texts, summaries, n_sentences, summary_length, summary_ratio, max_summary_length):
 
     predicted = []
-    for text in tqdm(texts):
+    for text, n in tqdm(zip(texts, n_sentences)):
         if summary_ratio:
-            predicted.append(model(text, ratio=summary_ratio))
+            num_sentences = int(np.ceil(summary_ratio * n))
+            predicted.append(model(text, num_sentences=num_sentences))
         elif summary_length:
             predicted.append(model(text, num_sentences=summary_length))
         else:
@@ -116,14 +117,15 @@ def main(
 ):
     params = locals()
     if random:
-        texts, summaries, filtered_texts = load_random_as_many_as_filtered(input_json, threshold)
+        texts, summaries, filtered_texts, n_sentences = load_random_as_many_as_filtered(input_json, threshold)
     else:
-        texts, summaries, filtered_texts = load_filtered(input_json, threshold)
+        texts, summaries, filtered_texts, n_sentences = load_filtered(input_json, threshold)
+
 
     if filtered:
-        result = evaluate(filtered_texts, summaries, summary_length, summary_ratio, max_summary_length)
+        result = evaluate(filtered_texts, summaries, n_sentences, summary_length, summary_ratio, max_summary_length)
     else:
-        result = evaluate(texts, summaries, summary_length, summary_ratio, max_summary_length)
+        result = evaluate(texts, summaries, n_sentences, summary_length, summary_ratio, max_summary_length)
 
     if save_file is not None:
         with open(save_file, "w") as f:
