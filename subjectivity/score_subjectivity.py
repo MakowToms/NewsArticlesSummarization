@@ -93,7 +93,9 @@ def save_json_data(path, texts, summaries, scores, sentences, suffix=''):
                     scores,
                     sentences
                 )
-            ], f, indent=4
+            ],
+            f,
+            indent=4
         )
 
 
