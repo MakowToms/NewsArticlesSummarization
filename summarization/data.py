@@ -28,6 +28,23 @@ def load_newsroom(subset=True):
     return dataset
 
 
+def load_multinews(subset=True):
+    if subset:
+        dataset = load_dataset("multi_news", split="test[0:3000]")
+
+        # 90% train, 10% test + validation
+        train_testvalid = dataset.train_test_split(test_size=0.1)
+
+        # Split the 10% test + valid in half test, half valid
+        test_valid = train_testvalid['test'].train_test_split(test_size=0.5)
+
+        # gather everyone if you want to have a single DatasetDict
+        dataset = DatasetDict({'train': train_testvalid['train'], 'test': test_valid['test'], 'validation': test_valid['train']})
+    else:
+        dataset = load_dataset("multi_news")
+    return dataset
+
+
 def filter_texts(texts):
     return [
         txt.replace("\n", "").replace("\x97", "") for txt in texts
@@ -35,9 +52,16 @@ def filter_texts(texts):
 
 
 def save_sample_data(dataset_name="newsroom", file_name="sample-v2", n_samples=100):
-    newsroom = load_newsroom(subset=True)
-    src_texts = filter_texts([str(text) for text in newsroom.data["train"]["text"][:n_samples]])
-    target_texts = filter_texts([str(text) for text in newsroom.data["train"]["summary"][:n_samples]])
+    if dataset_name == "newsroom":
+        newsroom = load_newsroom(subset=True)
+        src_texts = filter_texts([str(text) for text in newsroom.data["train"]["text"][:n_samples]])
+        target_texts = filter_texts([str(text) for text in newsroom.data["train"]["summary"][:n_samples]])
+    elif dataset_name == "multinews":
+        multinews = load_multinews(subset=True)
+        src_texts = filter_texts([str(text) for text in multinews.data["train"]["document"][:n_samples]])
+        target_texts = filter_texts([str(text) for text in multinews.data["train"]["summary"][:n_samples]])
+    else:
+        raise ValueError(f"Dataset nam {dataset_name} is not valid.")
 
     mean_len = sum([len(t) for t in src_texts]) / n_samples
     mean_sum = sum([len(t) for t in target_texts]) / n_samples
@@ -45,11 +69,23 @@ def save_sample_data(dataset_name="newsroom", file_name="sample-v2", n_samples=1
     print(f"Mean summary length: {mean_sum}")
 
     with open(f"data/{dataset_name}/{file_name}.json", "w") as f:
-        json.dump([{
-            "text": text,
-            "summary": pred
-        } for text, pred in zip(src_texts, target_texts)], f, indent=4)
+        json.dump([
+            get_sample_dict(text, summary, dataset_name)
+            for text, summary in zip(src_texts, target_texts)
+        ], f, indent=4)
 
+
+def get_sample_dict(text, summary, dataset_name):
+    if dataset_name == "newsroom":
+        return {
+            "texts": [text],
+            "summary": summary
+        }
+    elif dataset_name == "multinews":
+        return {
+            "texts": [t for t in text.split('|||||') if t != ''],
+            "summary": summary
+        }
 
 def load_sample_data(dataset_name="newsroom", file_name="sample-v2"):
     with open(f"data/{dataset_name}/{file_name}.json", "r") as f:
@@ -60,3 +96,6 @@ def load_sample_data(dataset_name="newsroom", file_name="sample-v2"):
 # example usage
 # multi_news = load_dataset("multi_news")
 # newsroom = load_newsroom(subset=True)
+
+save_sample_data("multinews", "sample-v1")
+save_sample_data("newsroom", "sample-v2")
