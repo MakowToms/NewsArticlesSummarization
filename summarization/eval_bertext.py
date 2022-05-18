@@ -1,4 +1,3 @@
-# code based on huggingface examples
 import json
 from pathlib import Path
 from typing import Optional
@@ -11,15 +10,7 @@ from tqdm import tqdm
 from summarizer import Summarizer
 
 from config import NEPTUNE_PROJECT, NEPTUNE_API_TOKEN
-from summarization.data import load_sample_data
 from subjectivity.filter_subjectivity import load_filtered, load_random_as_many_as_filtered
-
-# init data
-# data = load_sample_data()
-# texts = [row["text"] for row in data]
-# summaries = [row["summary"] for row in data]
-# texts, summaries, filtered_texts = load_filtered("data/newsroom/sample-v2_subj_scored_blob.json", 0.4)
-# texts, summaries, filtered_texts = load_filtered("data/newsroom/sample-v2_subj_scored.json", 0.002)
 
 # init model
 model = Summarizer()
@@ -35,14 +26,17 @@ def change_size(predictions, dim):
     return new
 
 
-def evaluate(texts, summaries, summary_length, max_summary_length):
+def evaluate(texts, summaries, summary_length, summary_ratio, max_summary_length):
 
     predicted = []
-    num_sentences = summary_length
     for text in tqdm(texts):
-        if not summary_length:
+        if summary_ratio:
+            predicted.append(model(text, ratio=summary_ratio))
+        elif summary_length:
+            predicted.append(model(text, num_sentences=summary_length))
+        else:
             num_sentences = model.calculate_optimal_k(text, k_max=max_summary_length)
-        predicted.append(model(text, num_sentences=num_sentences))
+            predicted.append(model(text, num_sentences=num_sentences))
 
     result = metric.compute(predictions=predicted, references=summaries, use_stemmer=True)
     result = {key: value.mid.fmeasure * 100 for key, value in result.items()}
@@ -51,17 +45,6 @@ def evaluate(texts, summaries, summary_length, max_summary_length):
     result = {k: round(v, 4) for k, v in result.items()}
 
     return result
-
-
-# save results
-# result = evaluate(texts, summaries)
-# with open(f"data/newsroom/results/sample-v2.json", "w") as f:
-#     json.dump(result, f, indent=4)
-
-
-# result = evaluate(filtered_texts, summaries)
-# with open(f"data/newsroom/results/sample-v2_subj_scored_blob-0.4.json", "w") as f:
-#     json.dump(result, f, indent=4)
 
 
 @click.command(help="""
@@ -86,19 +69,26 @@ python -m summarization.eval_bertext -i data/newsroom/sample-v2_subj_scored_blob
     "-t",
     "--threshold",
     type=float,
+    default=0.01,
     help="Threshold to filter texts.",
 )
 @click.option(
     "-l",
     "--summary-length",
+    type=int,
+    help="Number of sentences from text to choose as a summary if --summary-ratio is not given.",
+)
+@click.option(
+    "--summary-ratio",
     type=float,
-    help="Number or ratio of sentences from text to choose as a summary.",
+    help="Ratio of sentences from text to choose as a summary.",
 )
 @click.option(
     "-m",
     "--max-summary-length",
-    type=float,
-    help="Max summary length to estimate if --summary-length is not set.",
+    type=int,
+    default=20,
+    help="Max summary length to estimate if --summary-length  or --summary-ratio is not set.",
 )
 @click.option(
     "-f",
@@ -117,9 +107,10 @@ python -m summarization.eval_bertext -i data/newsroom/sample-v2_subj_scored_blob
 def main(
     input_json: Path,
     save_file: Optional[Path] = None,
-    threshold: float = 0.0,
-    summary_length: float = None,
-    max_summary_length: int = 10,
+    threshold: float = 0.01,
+    summary_length: Optional[int] = None,
+    summary_ratio: Optional[float] = None,
+    max_summary_length: int = 20,
     filtered: bool = True,
     random: bool = False,
 ):
@@ -129,7 +120,11 @@ def main(
     else:
         texts, summaries, filtered_texts = load_filtered(input_json, threshold)
 
-    result = evaluate(filtered_texts, summaries, summary_length, max_summary_length)
+    if filtered:
+        result = evaluate(filtered_texts, summaries, summary_length, summary_ratio, max_summary_length)
+    else:
+        result = evaluate(texts, summaries, summary_length, summary_ratio, max_summary_length)
+
     if save_file is not None:
         with open(save_file, "w") as f:
             json.dump(result, f, indent=4)
@@ -145,24 +140,3 @@ def main(
 
 if __name__ == '__main__':
     main()
-
-
-# device = "cuda" if torch.cuda.is_available() else "cpu"
-# src_text = [
-#     """ PG&E stated it scheduled the blackouts in response to forecasts for high winds amid dry conditions. The aim is to reduce the risk of wildfires. Nearly 800 thousand customers were scheduled to be affected by the shutoffs which were expected to last through at least midday tomorrow."""
-# ]
-# assert (
-#     tgt_text[0]
-#     == "California's largest electricity provider has turned off power to hundreds of thousands of customers."
-# )
-
-# def preprocess_function(examples):
-#     inputs = [doc for doc in examples["text"]]
-#     model_inputs = tokenizer(inputs, max_length=1024, truncation=True)
-#     with tokenizer.as_target_tokenizer():
-#         labels = tokenizer(examples["summary"], max_length=128, truncation=True)
-#     model_inputs["labels"] = labels["input_ids"]
-#     return model_inputs
-#
-#
-# tokenized_newsroom = newsroom.map(preprocess_function, batched=True)
