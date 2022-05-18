@@ -32,15 +32,15 @@ def change_size(predictions, dim):
     return new
 
 
-def evaluate(texts, summaries, tokenizer, model):
+def evaluate(texts, summaries, tokenizer, model, batch_size, device):
     batches = [
-        tokenizer(texts[i:(i + 4)], truncation=True, padding="longest", return_tensors="pt").to(device)
-        for i in range(0, len(texts), 4)
+        tokenizer(texts[i:(i + batch_size)], truncation=True, padding="longest", return_tensors="pt").to(device)
+        for i in range(0, len(texts), batch_size)
     ]
 
     all_preds = []
     for batch in tqdm(batches):
-        all_preds.append(model.generate(**batch))
+        all_preds.append(model.generate(**batch).cpu())
 
     max_dim = max([preds.shape[1] for preds in all_preds])
 
@@ -111,7 +111,19 @@ python -m summarization.eval_pegasus -i data/newsroom/sample-v2_subj_scored_blob
     "--model-name",
     type=str,
     default="newsroom",
-    help="If should select random sentences.",
+    help="Pegasus model name to use.",
+)
+@click.option(
+    "--batch-size",
+    type=int,
+    default=4,
+    help="Size of batch size.",
+)
+@click.option(
+    "--device",
+    type=str,
+    default="cpu",
+    help="Device to use, one of cpu, cuda.",
 )
 def main(
     input_json: Path,
@@ -119,13 +131,14 @@ def main(
     threshold: float = 0.01,
     filtered: bool = True,
     random: bool = False,
-    model_name: str = "newsroom"
+    model_name: str = "newsroom",
+    batch_size: int = 4,
+    device: str = "cpu"
 ):
     params = locals()
 
     # init model
     model_name = f"google/pegasus-{model_name}"
-    device = "cpu"
     tokenizer = PegasusTokenizer.from_pretrained(model_name)
     model = PegasusForConditionalGeneration.from_pretrained(model_name).to(device)
 
@@ -135,9 +148,10 @@ def main(
         texts, summaries, filtered_texts = load_filtered(input_json, threshold)
 
     if filtered:
-        result = evaluate(filtered_texts, summaries, tokenizer, model)
+        result = evaluate(filtered_texts, summaries, tokenizer, model, batch_size, device)
     else:
-        result = evaluate(texts, summaries, tokenizer, model)
+        result = evaluate(texts, summaries, tokenizer, model, batch_size, device)
+
     if save_file is not None:
         with open(save_file, "w") as f:
             json.dump(result, f, indent=4)
