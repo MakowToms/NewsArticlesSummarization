@@ -21,6 +21,8 @@ from subjectivity.filter_subjectivity import load_filtered, load_random_as_many_
 # texts, summaries, filtered_texts = load_filtered("data/newsroom/sample-v2_subj_scored_blob.json", 0.4)
 # texts, summaries, filtered_texts = load_filtered("data/newsroom/sample-v2_subj_scored.json", 0.002)
 
+device = "cpu"
+
 # init metric
 metric = load_metric("rouge")
 
@@ -32,10 +34,10 @@ def change_size(predictions, dim):
     return new
 
 
-def evaluate(texts, summaries, tokenizer, model):
+def evaluate(texts, summaries, tokenizer, model, batch_size):
     batches = [
-        tokenizer(texts[i:(i + 4)], truncation=True, padding="longest", return_tensors="pt").to(device)
-        for i in range(0, len(texts), 4)
+        tokenizer(texts[i:(i + batch_size)], truncation=True, padding="longest", return_tensors="pt").to(device)
+        for i in range(0, len(texts), batch_size)
     ]
 
     all_preds = []
@@ -111,7 +113,13 @@ python -m summarization.eval_pegasus -i data/newsroom/sample-v2_subj_scored_blob
     "--model-name",
     type=str,
     default="newsroom",
-    help="If should select random sentences.",
+    help="Pegasus model name to use.",
+)
+@click.option(
+    "--batch-size",
+    type=int,
+    default=4,
+    help="Size of batch size.",
 )
 def main(
     input_json: Path,
@@ -119,13 +127,13 @@ def main(
     threshold: float = 0.01,
     filtered: bool = True,
     random: bool = False,
-    model_name: str = "newsroom"
+    model_name: str = "newsroom",
+    batch_size: int = 4,
 ):
     params = locals()
 
     # init model
     model_name = f"google/pegasus-{model_name}"
-    device = "cpu"
     tokenizer = PegasusTokenizer.from_pretrained(model_name)
     model = PegasusForConditionalGeneration.from_pretrained(model_name).to(device)
 
@@ -135,9 +143,10 @@ def main(
         texts, summaries, filtered_texts = load_filtered(input_json, threshold)
 
     if filtered:
-        result = evaluate(filtered_texts, summaries, tokenizer, model)
+        result = evaluate(filtered_texts, summaries, tokenizer, model, batch_size)
     else:
-        result = evaluate(texts, summaries, tokenizer, model)
+        result = evaluate(texts, summaries, tokenizer, model, batch_size)
+
     if save_file is not None:
         with open(save_file, "w") as f:
             json.dump(result, f, indent=4)
