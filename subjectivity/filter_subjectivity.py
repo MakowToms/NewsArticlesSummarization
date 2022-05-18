@@ -47,7 +47,7 @@ def load_random_as_many_as_filtered(path, threshold=0.001):
             sentences_np = np.array(sentences)
             number_of_sentences = np.sum(np.array(scores, dtype=float) > threshold)
             if number_of_sentences > 0:
-                random_sentences = np.random.choice(np.arange(0, sentences_np.shape[0]), n_sentences, replace=False)
+                random_sentences = np.random.choice(np.arange(0, sentences_np.shape[0]), number_of_sentences, replace=False)
                 filtered_sentences = sentences_np[random_sentences]
                 filtered_text_list.append(' '.join(filtered_sentences))
             else:
