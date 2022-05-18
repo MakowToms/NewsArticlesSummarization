@@ -21,8 +21,6 @@ from subjectivity.filter_subjectivity import load_filtered, load_random_as_many_
 # texts, summaries, filtered_texts = load_filtered("data/newsroom/sample-v2_subj_scored_blob.json", 0.4)
 # texts, summaries, filtered_texts = load_filtered("data/newsroom/sample-v2_subj_scored.json", 0.002)
 
-device = "cpu"
-
 # init metric
 metric = load_metric("rouge")
 
@@ -34,7 +32,7 @@ def change_size(predictions, dim):
     return new
 
 
-def evaluate(texts, summaries, tokenizer, model, batch_size):
+def evaluate(texts, summaries, tokenizer, model, batch_size, device):
     batches = [
         tokenizer(texts[i:(i + batch_size)], truncation=True, padding="longest", return_tensors="pt").to(device)
         for i in range(0, len(texts), batch_size)
@@ -121,6 +119,12 @@ python -m summarization.eval_pegasus -i data/newsroom/sample-v2_subj_scored_blob
     default=4,
     help="Size of batch size.",
 )
+@click.option(
+    "--device",
+    type=str,
+    default="cpu",
+    help="Device to use, one of cpu, cuda.",
+)
 def main(
     input_json: Path,
     save_file: Optional[Path] = None,
@@ -129,6 +133,7 @@ def main(
     random: bool = False,
     model_name: str = "newsroom",
     batch_size: int = 4,
+    device: str = "cpu"
 ):
     params = locals()
 
@@ -143,9 +148,9 @@ def main(
         texts, summaries, filtered_texts = load_filtered(input_json, threshold)
 
     if filtered:
-        result = evaluate(filtered_texts, summaries, tokenizer, model, batch_size)
+        result = evaluate(filtered_texts, summaries, tokenizer, model, batch_size, device)
     else:
-        result = evaluate(texts, summaries, tokenizer, model, batch_size)
+        result = evaluate(texts, summaries, tokenizer, model, batch_size, device)
 
     if save_file is not None:
         with open(save_file, "w") as f:
