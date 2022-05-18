@@ -31,11 +31,11 @@ def main(
     scorer_instance = scorers[scorer]()
     all_sentences = []
     all_scores = []
-    for text in texts:
-        sentences = nltk.tokenize.sent_tokenize(text)
-        scores = scorer_instance.score(sentences)
-        all_sentences.append(sentences)
-        all_scores.append(scores)
+    for text_list in texts:
+        sentences_list = [nltk.tokenize.sent_tokenize(text) for text in text_list]
+        scores_list = [scorer_instance.score(sentences) for sentences in sentences_list]
+        all_sentences.append(sentences_list)
+        all_scores.append(scores_list)
     save_json_data(
         path,
         texts,
@@ -69,7 +69,7 @@ class TransformerSentiment:
 def load_json_data(path):
     with open(path) as f:
         text_json = json.load(f)
-    texts = [i['text'] for i in text_json]
+    texts = [i['texts'] for i in text_json]
     summaries = [i['summary'] for i in text_json]
     return texts, summaries
 
@@ -82,7 +82,7 @@ def save_json_data(path, texts, summaries, scores, sentences, suffix=''):
         json.dump(
             [
                 {
-                    "text": text,
+                    "texts": text,
                     "summary": summary,
                     "scores": score,
                     "sentences": sentence,
