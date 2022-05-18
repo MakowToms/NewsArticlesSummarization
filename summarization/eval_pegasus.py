@@ -40,7 +40,7 @@ def evaluate(texts, summaries, tokenizer, model, batch_size, device):
 
     all_preds = []
     for batch in tqdm(batches):
-        all_preds.append(model.generate(**batch))
+        all_preds.append(model.generate(**batch).cpu())
 
     max_dim = max([preds.shape[1] for preds in all_preds])
 
