@@ -29,7 +29,7 @@ def load_filtered(path, threshold=0.001):
         for sentences, scores in zip(sentences_list, scores_list):
             sentences_np = np.array(sentences)
             filtered_sentences = sentences_np[
-                np.sort(np.array(scores, dtype=float) > threshold)
+                np.where(np.array(scores, dtype=float) > threshold)
             ]
             filtered_text_list.append(' '.join(filtered_sentences))
         filtered_texts.append(' ||||| '.join(filtered_text_list))
