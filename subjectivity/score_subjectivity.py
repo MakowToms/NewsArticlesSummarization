@@ -1,11 +1,43 @@
+import click
 import sys
 import json
 from transformers import pipeline
 import nltk
 from textblob import TextBlob
-nltk.download('punkt')
 
-PATH = 'data/newsroom/sample-v1.json'
+
+@click.command(help="Create sentence scores for a json file with texts")
+@click.option(
+    "-p",
+    "--path",
+    default="data/newsroom/sample-v1.json",
+    type=str,
+    help="Path to json file with texts.",
+)
+@click.option(
+    "-s",
+    "--scorer",
+    default="blob",
+    type=str,
+    help="Name of the scorer to use: [blob, transformer].",
+)
+def main(
+        path: str,
+        scorer: str,
+):
+    nltk.download('punkt')
+    texts, summaries = load_json_data(path)
+    scorers = {'blob': BlobSentiment, 'transformer': TransformerSentiment}
+    scorer = scorers[scorer]()
+    all_sentences = []
+    all_scores = []
+    for text in texts:
+        sentences = nltk.tokenize.sent_tokenize(text)
+        scores = scorer.score(sentences)
+        all_sentences.append(sentences)
+        all_scores.append(scores)
+    save_json_data(path, texts, summaries, all_scores, all_sentences, scorer)
+    return 0
 
 
 class BlobSentiment:
@@ -46,20 +78,6 @@ def save_json_data(path, texts, summaries, scores, sentences, suffix=''):
             "scores": score,
             "sentences": sentence,
         } for text, summary, score, sentence in zip(texts, summaries, scores, sentences)], f, indent=4)
-
-
-def main():
-    texts, summaries = load_json_data(PATH)
-    scorer = BlobSentiment()
-    all_sentences = []
-    all_scores = []
-    for text in texts:
-        sentences = nltk.tokenize.sent_tokenize(text)
-        scores = scorer.score(sentences)
-        all_sentences.append(sentences)
-        all_scores.append(scores)
-    save_json_data(PATH, texts, summaries, all_scores, all_sentences, 'blob')
-    return 0
 
 
 if __name__ == '__main__':
