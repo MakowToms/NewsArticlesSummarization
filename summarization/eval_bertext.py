@@ -8,7 +8,7 @@ import neptune.new as neptune
 import numpy as np
 from datasets import load_metric
 from tqdm import tqdm
-from transformers import PegasusForConditionalGeneration, PegasusTokenizer
+from summarizer import Summarizer
 
 from config import NEPTUNE_PROJECT, NEPTUNE_API_TOKEN
 from summarization.data import load_sample_data
@@ -23,10 +23,7 @@ from subjectivity.filter_subjectivity import load_filtered
 # texts, summaries, filtered_texts = load_filtered("data/newsroom/sample-v2_subj_scored.json", 0.002)
 
 # init model
-model_name = "google/pegasus-newsroom"
-device = "cpu"
-tokenizer = PegasusTokenizer.from_pretrained(model_name)
-model = PegasusForConditionalGeneration.from_pretrained(model_name).to(device)
+model = Summarizer()
 
 # init metric
 metric = load_metric("rouge")
@@ -39,14 +36,17 @@ def change_size(predictions, dim):
     return new
 
 
-def evaluate(texts, summaries):
+def evaluate(texts, summaries, summary_length, max_summary_length):
     batches = [
         tokenizer(texts[i:(i + 4)], truncation=True, padding="longest", return_tensors="pt").to(device)
         for i in range(0, len(texts), 4)
     ]
 
     all_preds = []
-    for batch in tqdm(batches):
+    text_summary_length = summary_length
+    for text in tqdm(texts):
+        if not summary_length:
+            text_summary_length = model.calculate_optimal_k(text, k_max=max_summary_length)
         all_preds.append(model.generate(**batch))
 
     max_dim = max([preds.shape[1] for preds in all_preds])
@@ -76,10 +76,10 @@ def evaluate(texts, summaries):
 
 
 @click.command(help="""
-Script to generate Pegasus summaries.
+Script to generate Bert extractive summarizer summaries.
 
 Example usage:
-python -m summarization.eval_pegasus -i data/newsroom/sample-v2_subj_scored_blob.json -t 0.4
+python -m summarization.eval_bertext -i data/newsroom/sample-v2_subj_scored_blob.json -l 5
 """)
 @click.option(
     "-s",
@@ -99,15 +99,29 @@ python -m summarization.eval_pegasus -i data/newsroom/sample-v2_subj_scored_blob
     type=float,
     help="Threshold to filter texts.",
 )
+@click.option(
+    "-l",
+    "--summary-length",
+    type=float,
+    help="Number or ratio of sentences from text to choose as a summary.",
+)
+@click.option(
+    "-m",
+    "--max-summary-length",
+    type=float,
+    help="Max summary length to estimate if --summary-length is not set.",
+)
 def main(
     input_json: Path,
     save_file: Optional[Path] = None,
-    threshold: float = 0.01,
+    threshold: float = 0.0,
+    summary_length: float = None,
+    max_summary_length: int = 10,
 ):
     params = locals()
     texts, summaries, filtered_texts = load_filtered(input_json, threshold)
 
-    result = evaluate(filtered_texts, summaries)
+    result = evaluate(filtered_texts, summaries, summary_length, max_summary_length)
     if save_file is not None:
         with open(save_file, "w") as f:
             json.dump(result, f, indent=4)
