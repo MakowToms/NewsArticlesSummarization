@@ -84,7 +84,7 @@ python -m summarization.eval_pegasus -i data/newsroom/sample-v2_subj_scored_blob
 @click.option(
     "-s",
     "--save-file",
-    type=Optional[Path],
+    type=Path,
     help="Path to save file with results.",
 )
 @click.option(
