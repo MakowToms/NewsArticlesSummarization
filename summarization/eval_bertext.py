@@ -121,7 +121,6 @@ def main(
     else:
         texts, summaries, filtered_texts, n_sentences = load_filtered(input_json, threshold)
 
-
     if filtered:
         result = evaluate(filtered_texts, summaries, n_sentences, summary_length, summary_ratio, max_summary_length)
     else:

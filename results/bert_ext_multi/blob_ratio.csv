@@ -1,0 +1,7 @@
+Id,Creation Time,Owner,Tags,rouge1,rouge2,results/rougeL,gen_summ_len,filtered_l,text_len,parameters/threshold,parameters/input_json,method,parameters/summary_ratio,parameters/filtered
+NEWS-84,2022-05-18 19:40:36,michal.pastuszka,[],29.8993,19.655,27.0204,173.21,3107.02,3643.29,0.4,data\newsroom\sample-v2_subj_scored_blob.json,BertExt,0.01,true
+NEWS-43,2022-05-18 16:29:17,michal.pastuszka,[],23.367,13.1034,18.6036,832.23,3107.02,3643.29,0.4,data\newsroom\sample-v2_subj_scored_blob.json,BertExt,0.3,true
+NEWS-39,2022-05-18 16:22:20,michal.pastuszka,[],26.3206,15.3745,21.8273,618.42,3107.02,3643.29,0.4,data\newsroom\sample-v2_subj_scored_blob.json,BertExt,0.2,true
+NEWS-35,2022-05-18 16:14:52,michal.pastuszka,[],28.9678,17.5092,24.9224,381.52,3107.02,3643.29,0.4,data\newsroom\sample-v2_subj_scored_blob.json,BertExt,0.1,true
+NEWS-31,2022-05-18 16:07:55,michal.pastuszka,[],29.6247,18.6583,26.278,256.36,3107.02,3643.29,0.4,data\newsroom\sample-v2_subj_scored_blob.json,BertExt,0.05,true
+NEWS-27,2022-05-18 16:01:57,michal.pastuszka,[],29.9686,19.699,27.0253,184.61,3107.02,3643.29,0.4,data\newsroom\sample-v2_subj_scored_blob.json,BertExt,0.02,true
