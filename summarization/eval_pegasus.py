@@ -1,5 +1,6 @@
 # code based on huggingface examples
 import json
+from collections import defaultdict
 from pathlib import Path
 from typing import Optional
 
@@ -32,7 +33,7 @@ def change_size(predictions, dim):
     return new
 
 
-def evaluate(texts, summaries, tokenizer, model, batch_size, device):
+def evaluate(texts, summaries, tokenizer, model, batch_size, device, evaluate_single):
     batches = [
         tokenizer(texts[i:(i + batch_size)], truncation=True, padding="longest", return_tensors="pt").to(device)
         for i in range(0, len(texts), batch_size)
@@ -53,6 +54,17 @@ def evaluate(texts, summaries, tokenizer, model, batch_size, device):
     prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds_concat]
     result["gen_len"] = np.mean(prediction_lens)
     result = {k: round(v, 4) for k, v in result.items()}
+
+    if evaluate_single:
+        result_single = defaultdict(list)
+        result["lens"] = prediction_lens
+        for i in range(len(predicted)):
+            result2 = metric.compute(predictions=[predicted[i]], references=[summaries[i]], use_stemmer=True)
+            result2 = {key: value.mid.fmeasure * 100 for key, value in result2.items()}
+            result2 = {k: round(v, 4) for k, v in result2.items()}
+            for key, val in result2.items():
+                result_single[key].append(val)
+        return result, result_single
 
     return result
 
@@ -148,9 +160,9 @@ def main(
         texts, summaries, filtered_texts, n_sentences = load_filtered(input_json, threshold)
 
     if filtered:
-        result = evaluate(filtered_texts, summaries, tokenizer, model, batch_size, device)
+        result, result_single = evaluate(filtered_texts, summaries, tokenizer, model, batch_size, device, True)
     else:
-        result = evaluate(texts, summaries, tokenizer, model, batch_size, device)
+        result, result_single = evaluate(texts, summaries, tokenizer, model, batch_size, device, True)
 
     if save_file is not None:
         with open(save_file, "w") as f:
@@ -159,8 +171,11 @@ def main(
     logger = neptune.init(project=NEPTUNE_PROJECT, api_token=NEPTUNE_API_TOKEN)
     logger["parameters"] = params
     logger["results"] = result
+    logger["result_single"] = result_single
     logger["mean_filtered_length"] = sum([len(t) for t in filtered_texts]) / len(filtered_texts)
     logger["mean_text_length"] = sum([len(t) for t in texts]) / len(filtered_texts)
+    logger["filtered_lengths"] = [len(t) for t in filtered_texts]
+    logger["text_lengths"] = [len(t) for t in texts]
     logger["method"] = "Pegasus"
     logger.stop()
 
