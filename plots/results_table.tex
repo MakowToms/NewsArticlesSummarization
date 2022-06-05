@@ -1,0 +1,15 @@
+\begin{tabular}{lllrrrr}
+\toprule
+  dataset &  method &          filtering &  length &  rouge1 &  rouge2 &  rougeL \\
+Multinews & BertExt &           Baseline & 9902.78 & 40.2815 & 12.7210 & 18.5211 \\
+\midrule
+Multinews & BertExt &  Transformer 0.002 & 7751.77 & 40.1122 & 12.8683 & 18.7981 \\
+Multinews & BertExt &           Blob 0.2 & 9251.31 & 40.0976 & 12.5480 & 18.5161 \\
+Multinews & Pegasus &           Baseline & 9902.78 & 47.6871 & 18.7212 & 24.4209 \\
+Multinews & Pegasus & Transformer 0.0005 & 9255.50 & 47.9188 & 19.1343 & 24.8020 \\
+ Newsroom & BertExt &           Baseline & 3643.29 & 30.1140 & 19.9668 & 27.3317 \\
+ Newsroom & BertExt &           Blob 0.2 & 3493.73 & 30.5741 & 20.3963 & 27.7525 \\
+ Newsroom & Pegasus &           Baseline & 3643.29 & 39.0886 & 28.1645 & 35.3626 \\
+ Newsroom & Pegasus &           Blob 0.3 & 3384.18 & 37.4897 & 26.9782 & 33.6508 \\
+\bottomrule
+\end{tabular}
