@@ -182,24 +182,3 @@ def main(
 
 if __name__ == '__main__':
     main()
-
-
-# device = "cuda" if torch.cuda.is_available() else "cpu"
-# src_text = [
-#     """ PG&E stated it scheduled the blackouts in response to forecasts for high winds amid dry conditions. The aim is to reduce the risk of wildfires. Nearly 800 thousand customers were scheduled to be affected by the shutoffs which were expected to last through at least midday tomorrow."""
-# ]
-# assert (
-#     tgt_text[0]
-#     == "California's largest electricity provider has turned off power to hundreds of thousands of customers."
-# )
-
-# def preprocess_function(examples):
-#     inputs = [doc for doc in examples["text"]]
-#     model_inputs = tokenizer(inputs, max_length=1024, truncation=True)
-#     with tokenizer.as_target_tokenizer():
-#         labels = tokenizer(examples["summary"], max_length=128, truncation=True)
-#     model_inputs["labels"] = labels["input_ids"]
-#     return model_inputs
-#
-#
-# tokenized_newsroom = newsroom.map(preprocess_function, batched=True)
