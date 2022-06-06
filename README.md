@@ -24,6 +24,8 @@ The `-p` parameter have to provide path to json with sentences, and `-s` denotes
 
 ## Creating summaries
 
+Before running any script, you need to set up `NEPTUNE_API_TOKEN` environment variable with your neptune api token: login to https://neptune.ai/ and in menu go to `Get your API token`. You also need an access to closed `DSW-RedTurtle/news-summarization-NLP` or you can change `NEPTUNE_PROJECT` variable in `config.py` to your own project.
+
 Summaries with BertExt can be generated using:
 
     python -m summarization.eval_bertext -i data/newsroom/sample-v2_subj_scored_blob.json -l 5
